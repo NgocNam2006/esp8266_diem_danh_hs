@@ -2,7 +2,6 @@ function doGet(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("DanhSach");
 
-    // Nếu yêu cầu là lấy thời gian hiện tại
     if (e.parameter.action === "getTime") {
       var now = new Date();
       return ContentService
@@ -10,14 +9,12 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.TEXT);
     }
 
-    // Truy vấn theo RFID
     var rfid = e.parameter.rfid;
     if (!rfid) throw new Error("Thiếu tham số RFID");
 
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (data[i][0].toString().toUpperCase() === rfid.toUpperCase()) {
-        // Trả về "Họ và tên"
         return ContentService
           .createTextOutput(data[i][1])
           .setMimeType(ContentService.MimeType.TEXT);
@@ -46,7 +43,6 @@ function doPost(e) {
     var fullName = data.name || "unknown";
     var now = new Date();
 
-    // Ghi: RFID | Họ và tên | Thời gian
     sheet.appendRow([rfid, fullName, now]);
 
     return ContentService
