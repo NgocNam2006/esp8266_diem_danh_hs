@@ -5,11 +5,11 @@
 #include <ESP8266HTTPClient.h>
 
 // Wi-Fi cấu hình
-const char* ssid = "Redmi Turbo 3";        
-const char* password = "12345678";
+const char* ssid = "NAME_WIFI";        
+const char* password = "PASS_WIFI";
 
 // Google Apps Script URL
-const char* serverName = "https://script.google.com/macros/s/AKfycby8J3MV631TOedJEVjeCj6HLzhijv9eTrCyUpKLSlymiQ8KE2UOQSmKTLCxGUeyXSAH/exec";
+const char* serverName = "LINK_APP_SCRIPT";
 
 // Cấu hình chân RC522
 #define SS_PIN 15  // D8
