@@ -13,7 +13,7 @@ Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để đ
 
 ### Sơ đồ nối RC522 + Buzzer với ESP8266
 
-| Thiết bị   | Chân        | ESP8266 Pin     |
+| Thiết bị   | Chân        | ESP8266         |
 |------------|-------------|-----------------|
 | **RC522**  | SDA         | D8 (GPIO15)     |
 |            | SCK         | D5 (GPIO14)     |
