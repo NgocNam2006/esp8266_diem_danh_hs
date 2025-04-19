@@ -6,7 +6,7 @@
 
 const char* ssid = "NAME_WIFI";        
 const char* password = "PASS_WIFI";
-const char* serverName = "LINK_APP_SCRPT";
+const char* serverName = "LINK_APP_SCRIPT";
 
 #define SS_PIN 15
 #define RST_PIN 5
