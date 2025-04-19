@@ -83,7 +83,7 @@ Thay `NAME_WIFI`, `PASS_WIFI` và `LINK_APP_SCRIPT` trong code bằng thông tin
 ## 5. Liên Hệ
 
 - **Email**: [hnn.inf.77@gmail.com](mailto:hnn.inf.77@gmail.com)
-- **GitHub**: [Ngocnamm06](https://github.com/ngocnamm06)
+- **GitHub**: [NgocNam2006](https://github.com/NgocNam2006)
 - **Facebook**: [Hồ Ngọc Nam](https://facebook.com/namdz.pro.2006)
 - **Discord**: [HuYuNan (@ngocnamm_2006)](https://discord.gg/QMfA6kVY)
 --- 
