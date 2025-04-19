@@ -5,7 +5,7 @@ function doGet(e) {
     if (e.parameter.action === "getTime") {
       var now = new Date();
       return ContentService
-        .createTextOutput(Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss"))
+        .createTextOutput(Utilities.formatDate(now, "GMT+7", "yyyy-MM-dd HH:mm:ss"))
         .setMimeType(ContentService.MimeType.TEXT);
     }
 
