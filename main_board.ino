@@ -6,13 +6,18 @@
 
 const char* ssid = "NAME_WIFI";        
 const char* password = "PASS_WIFI";
-const char* serverName = "LINK_APP_SCRIPT";
+const char* serverName = "LINK_APP_SCRPT";
 
 #define SS_PIN 15
 #define RST_PIN 5
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
 #define BUZZER_PIN 4
+
+struct UserInfo {
+  String name;
+  String className;
+};
 
 void setup() {
   Serial.begin(115200);
@@ -61,11 +66,11 @@ void loop() {
   }
   rfid.toUpperCase();
 
-  String name = getNameFromRFID(rfid);
+  UserInfo user = getUserInfoFromRFID(rfid);
   String currentTime = getCurrentTime();
-  sendToGoogleSheets(rfid, name);
+  sendToGoogleSheets(rfid, user.name, user.className);
 
-  if (name == "Unknown") {
+  if (user.name == "Unknown") {
     digitalWrite(BUZZER_PIN, HIGH);
     delay(300);
     digitalWrite(BUZZER_PIN, LOW);
@@ -81,13 +86,15 @@ void loop() {
   Serial.print("UID: ");
   Serial.println(rfid);
   Serial.print("Họ và tên: ");
-  Serial.println(name);
+  Serial.println(user.name);
+  Serial.print("Lớp: ");
+  Serial.println(user.className);
   Serial.println("=============================");
 
   delay(3000);
 }
 
-String getNameFromRFID(String rfid) {
+UserInfo getUserInfoFromRFID(String rfid) {
   WiFiClient client;
   HTTPClient http;
 
@@ -95,18 +102,26 @@ String getNameFromRFID(String rfid) {
   http.begin(client, url);
 
   int httpResponseCode = http.GET();
-  String payload = "Unknown";
+  UserInfo info;
+  info.name = "Unknown";
+  info.className = "";
 
   if (httpResponseCode == 200) {
-    payload = http.getString();
-    payload.trim();
+    String payload = http.getString();
+    StaticJsonDocument<256> doc;
+    DeserializationError error = deserializeJson(doc, payload);
+
+    if (!error) {
+      info.name = doc["name"] | "Unknown";
+      info.className = doc["class"] | "";
+    }
   } else {
-    Serial.print("❌ Lỗi GET tên từ Sheets: ");
+    Serial.print("❌ Lỗi GET thông tin từ Sheets: ");
     Serial.println(httpResponseCode);
   }
 
   http.end();
-  return payload;
+  return info;
 }
 
 String getCurrentTime() {
@@ -131,13 +146,14 @@ String getCurrentTime() {
   return payload;
 }
 
-void sendToGoogleSheets(String rfid, String name) {
+void sendToGoogleSheets(String rfid, String name, String className) {
   WiFiClient client;
   HTTPClient http;
 
   StaticJsonDocument<256> doc;
   doc["rfid"] = rfid;
   doc["name"] = name;
+  doc["class"] = className;
 
   String jsonString;
   serializeJson(doc, jsonString);
