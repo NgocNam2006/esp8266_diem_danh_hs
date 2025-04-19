@@ -1,6 +1,6 @@
 # Hệ Thống Điểm Danh Học Sinh Bằng RFID
 
-Dự án sử dụng **ESP8266 + RC522 + buzzer 3V**, kết nối Wi-Fi để điểm danh học sinh và lưu dữ liệu thời gian thực lên **Google Sheets** thông qua **Google Apps Script**.
+Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để điểm danh học sinh và lưu dữ liệu thời gian thực lên **Google Sheets** thông qua **Google Apps Script**.
 
 ## 1. Phần Cứng
 
@@ -8,7 +8,7 @@ Dự án sử dụng **ESP8266 + RC522 + buzzer 3V**, kết nối Wi-Fi để đ
 - **RC522 RFID Reader**
 - **Buzzer 3V**
 - **Thẻ RFID (UID dạng HEX)**
-- Dây nối Dupont
+- Dây kết nối MicroUSB
 - Nguồn 5V
 
 ### Sơ đồ nối RC522 + Buzzer với ESP8266
@@ -80,7 +80,3 @@ Thay `NAME_WIFI`, `PASS_WIFI` và `LINK_APP_SCRIPT` trong code bằng thông tin
 4. Cho phép mọi người truy cập và copy link vào biến `LINK_APP_SCRIPT`
 
 ---
-
-## 5. License
-
- dùng 
