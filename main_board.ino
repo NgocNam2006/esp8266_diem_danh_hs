@@ -6,18 +6,16 @@
 
 const char* ssid = "NAME_WIFI";        
 const char* password = "PASS_WIFI";
-
 const char* serverName = "LINK_APP_SCRIPT";
 
-#define SS_PIN 15  
-#define RST_PIN 5  
+#define SS_PIN 15
+#define RST_PIN 5
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-#define BUZZER_PIN 4  
+#define BUZZER_PIN 4
 
 void setup() {
   Serial.begin(115200);
-
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
   
@@ -33,7 +31,27 @@ void setup() {
   Serial.println("✅ RC522 đã khởi tạo!");
 }
 
+void ensureWiFiConnected() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("🔄 Wi-Fi bị ngắt. Đang kết nối lại...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    unsigned long startAttemptTime = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
+      delay(500);
+      Serial.print(".");
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\n✅ Đã kết nối lại Wi-Fi!");
+    } else {
+      Serial.println("\n❌ Không thể kết nối lại Wi-Fi!");
+    }
+  }
+}
+
 void loop() {
+  ensureWiFiConnected();
+
   if (!mfrc522.PICC_IsNewCardPresent()) return;
   if (!mfrc522.PICC_ReadCardSerial()) return;
 
@@ -44,9 +62,7 @@ void loop() {
   rfid.toUpperCase();
 
   String name = getNameFromRFID(rfid);
-
   String currentTime = getCurrentTime();
-
   sendToGoogleSheets(rfid, name);
 
   if (name == "Unknown") {
