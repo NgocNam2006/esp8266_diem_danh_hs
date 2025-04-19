@@ -15,15 +15,23 @@ function doGet(e) {
     var data = sheet.getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
       if (data[i][0].toString().toUpperCase() === rfid.toUpperCase()) {
+        var result = {
+          name: data[i][1],
+          class: data[i][2]
+        };
         return ContentService
-          .createTextOutput(data[i][1])
-          .setMimeType(ContentService.MimeType.TEXT);
+          .createTextOutput(JSON.stringify(result))
+          .setMimeType(ContentService.MimeType.JSON);
       }
     }
 
+    var unknown = {
+      name: "Unknown",
+      class: ""
+    };
     return ContentService
-      .createTextOutput("Unknown")
-      .setMimeType(ContentService.MimeType.TEXT);
+      .createTextOutput(JSON.stringify(unknown))
+      .setMimeType(ContentService.MimeType.JSON);
 
   } catch (error) {
     return ContentService
@@ -41,9 +49,10 @@ function doPost(e) {
 
     var rfid = data.rfid || "unknown";
     var fullName = data.name || "unknown";
+    var className = data.class || "";
     var now = new Date();
 
-    sheet.appendRow([rfid, fullName, now]);
+    sheet.appendRow([rfid, fullName, className, now]);
 
     return ContentService
       .createTextOutput("Đã lưu thành công")
