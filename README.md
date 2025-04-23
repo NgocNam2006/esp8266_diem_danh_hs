@@ -54,6 +54,7 @@ Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để đ
   - `MFRC522.h`
   - `ArduinoJson.h`
   - `ESP8266HTTPClient.h`
+  - `LiquidCrystal_I2C`
 - Gửi và nhận dữ liệu với Google Apps Script qua Wi-Fi
 
 ### b. Google Apps Script
