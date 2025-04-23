@@ -12,7 +12,7 @@ Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để đ
 - Dây kết nối MicroUSB
 - Nguồn 5V
 
-### Sơ đồ nối RC522 + Buzzer với ESP8266
+### Sơ đồ nối RC522 + Buzzer + LCD1620A với ESP8266
 
 | Thiết bị     | Chân        | ESP8266         |
 |--------------|-------------|-----------------|
