@@ -57,7 +57,7 @@ void ensureWiFiConnected() {
     unsigned long startAttemptTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
       delay(500);
-      Serial.print(".");
+      Serial.print("...");
     }
     if (WiFi.status() == WL_CONNECTED) Serial.println("\n✅ Wi-Fi đã kết nối lại");
     else Serial.println("\n❌ Không thể kết nối Wi-Fi");
@@ -117,24 +117,29 @@ UserInfo getUserInfoFromRFID(String rfid) {
   if (httpResponseCode == 200) {
     String payload = http.getString();
     StaticJsonDocument<256> doc;
-    if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+    if (!deserializeJson(doc, payload)) {
       info.name = doc["name"] | "Unknown";
       info.className = doc["class"] | "";
     }
-  } else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
+  } 
+  else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND || httpResponseCode == HTTP_CODE_TEMPORARY_REDIRECT) {
     String redirectUrl = http.getLocation();
+    Serial.println("🔄 Đang chuyển hướng đến: " + redirectUrl);
     http.end();
     http.begin(client, redirectUrl);
+    
     httpResponseCode = http.GET();
-
     if (httpResponseCode == 200) {
       String payload = http.getString();
       StaticJsonDocument<256> doc;
-      if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+      if (!deserializeJson(doc, payload)) {
         info.name = doc["name"] | "Unknown";
         info.className = doc["class"] | "";
       }
     }
+  } 
+  else {
+    Serial.println("❌ HTTP error: " + String(httpResponseCode));
   }
 
   http.end();
