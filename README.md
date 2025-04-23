@@ -6,6 +6,7 @@ Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để đ
 
 - **ESP8266 (NodeMCU)**
 - **RC522 RFID Reader**
+- **LCD1620A**
 - **Buzzer 3V**
 - **Thẻ RFID (UID dạng HEX)**
 - Dây kết nối MicroUSB
@@ -13,17 +14,21 @@ Dự án sử dụng **ESP8266 + RC522 + Buzzer 3V**, kết nối Wi-Fi để đ
 
 ### Sơ đồ nối RC522 + Buzzer với ESP8266
 
-| Thiết bị   | Chân        | ESP8266         |
-|------------|-------------|-----------------|
-| **RC522**  | SDA         | D8 (GPIO15)     |
-|            | SCK         | D5 (GPIO14)     |
-|            | MOSI        | D7 (GPIO13)     |
-|            | MISO        | D6 (GPIO12)     |
-|            | RST         | D1 (GPIO5)      |
-|            | GND         | GND             |
-|            | 3.3V        | 3.3V            |
-| **Buzzer** | Chân +      | D2 (GPIO4)      |
-|            | Chân –      | GND             |
+| Thiết bị     | Chân        | ESP8266         |
+|--------------|-------------|-----------------|
+| **RC522**    | SDA         | D8 (GPIO15)     |
+|              | SCK         | D5 (GPIO14)     |
+|              | MOSI        | D7 (GPIO13)     |
+|              | MISO        | D6 (GPIO12)     |
+|              | RST         | D1 (GPIO5)      |
+|              | GND         | GND             |
+|              | 3.3V        | 3.3V            |
+| **Buzzer**   | Chân +      | D2 (GPIO4)      |
+|              | Chân –      | GND             |
+|**LCD 1620A** | GND         | GND             |
+|              | VCC         | 5V              |
+|              | SDA         | D2 (GPIO4)      |
+|              | SCL         | D1 (GPIO5)      |
 
 ---
 
