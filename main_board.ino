@@ -3,9 +3,14 @@
 #include <SPI.h>
 #include <ArduinoJson.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecure.h>
+#include <LiquidCrystal_I2C.h>
 
-const char* ssid = "NAME_WIFI";        
+LiquidCrystal_I2C lcd(0x3F, 16, 2);
+
+const char* ssid = "NAME_WIFI";
 const char* password = "PASS_WIFI";
+
 const char* serverName = "LINK_APP_SCRIPT";
 
 #define SS_PIN 15
@@ -23,22 +28,30 @@ void setup() {
   Serial.begin(115200);
   pinMode(BUZZER_PIN, OUTPUT);
   digitalWrite(BUZZER_PIN, LOW);
-  
+
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Diem danh RFID");
+  delay(2000);
+  lcd.clear();
+
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    Serial.println("Đang kết nối đến Wi-Fi...");
+    Serial.println("Đang kết nối Wi-Fi...");
   }
-  Serial.println("✅ Kết nối Wi-Fi thành công!");
+  Serial.println("✅ Wi-Fi OK");
 
   SPI.begin();
   mfrc522.PCD_Init();
-  Serial.println("✅ RC522 đã khởi tạo!");
+  Serial.println("✅ RC522 OK");
 }
 
 void ensureWiFiConnected() {
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("🔄 Wi-Fi bị ngắt. Đang kết nối lại...");
+    Serial.println("🔄 Wi-Fi ngắt. Kết nối lại...");
     WiFi.disconnect();
     WiFi.begin(ssid, password);
     unsigned long startAttemptTime = millis();
@@ -46,11 +59,8 @@ void ensureWiFiConnected() {
       delay(500);
       Serial.print(".");
     }
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\n✅ Đã kết nối lại Wi-Fi!");
-    } else {
-      Serial.println("\n❌ Không thể kết nối lại Wi-Fi!");
-    }
+    if (WiFi.status() == WL_CONNECTED) Serial.println("\n✅ Wi-Fi đã kết nối lại");
+    else Serial.println("\n❌ Không thể kết nối Wi-Fi");
   }
 }
 
@@ -70,32 +80,30 @@ void loop() {
   String currentTime = getCurrentTime();
   sendToGoogleSheets(rfid, user.name, user.className);
 
-  if (user.name == "Unknown") {
-    digitalWrite(BUZZER_PIN, HIGH);
-    delay(300);
-    digitalWrite(BUZZER_PIN, LOW);
-  } else {
-    digitalWrite(BUZZER_PIN, HIGH);
-    delay(100);
-    digitalWrite(BUZZER_PIN, LOW);
-  }
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(user.name == "Unknown" ? 500 : 300);
+  digitalWrite(BUZZER_PIN, LOW);
 
-  Serial.println("====== Quét thành công ======");
-  Serial.print("Thời gian: ");
-  Serial.println(currentTime);
-  Serial.print("UID: ");
-  Serial.println(rfid);
-  Serial.print("Họ và tên: ");
-  Serial.println(user.name);
-  Serial.print("Lớp: ");
-  Serial.println(user.className);
-  Serial.println("=============================");
+  Serial.println("===== ✅ Đã quét =====");
+  Serial.print("⏰ Thời gian: "); Serial.println(currentTime);
+  Serial.print("🆔 UID: "); Serial.println(rfid);
+  Serial.print("👤 Họ tên: "); Serial.println(user.name);
+  Serial.print("🏫 Lớp: "); Serial.println(user.className);
+  Serial.println("=====================");
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(user.name.length() > 16 ? user.name.substring(0, 16) : user.name);
+  lcd.setCursor(0, 1);
+  String line2 = user.className + " " + currentTime;
+  lcd.print(line2.length() > 16 ? line2.substring(0, 16) : line2);
 
   delay(3000);
 }
 
 UserInfo getUserInfoFromRFID(String rfid) {
-  WiFiClient client;
+  WiFiClientSecure client;
+  client.setInsecure();
   HTTPClient http;
 
   String url = String(serverName) + "?rfid=" + rfid;
@@ -109,15 +117,24 @@ UserInfo getUserInfoFromRFID(String rfid) {
   if (httpResponseCode == 200) {
     String payload = http.getString();
     StaticJsonDocument<256> doc;
-    DeserializationError error = deserializeJson(doc, payload);
-
-    if (!error) {
+    if (deserializeJson(doc, payload) == DeserializationError::Ok) {
       info.name = doc["name"] | "Unknown";
       info.className = doc["class"] | "";
     }
-  } else {
-    Serial.print("❌ Lỗi GET thông tin từ Sheets: ");
-    Serial.println(httpResponseCode);
+  } else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
+    String redirectUrl = http.getLocation();
+    http.end();
+    http.begin(client, redirectUrl);
+    httpResponseCode = http.GET();
+
+    if (httpResponseCode == 200) {
+      String payload = http.getString();
+      StaticJsonDocument<256> doc;
+      if (deserializeJson(doc, payload) == DeserializationError::Ok) {
+        info.name = doc["name"] | "Unknown";
+        info.className = doc["class"] | "";
+      }
+    }
   }
 
   http.end();
@@ -125,21 +142,18 @@ UserInfo getUserInfoFromRFID(String rfid) {
 }
 
 String getCurrentTime() {
-  WiFiClient client;
+  WiFiClientSecure client;
+  client.setInsecure();
   HTTPClient http;
 
   String url = String(serverName) + "?action=getTime";
   http.begin(client, url);
-
   int httpResponseCode = http.GET();
   String payload = "Unknown";
 
   if (httpResponseCode == 200) {
     payload = http.getString();
     payload.trim();
-  } else {
-    Serial.print("❌ Lỗi GET thời gian từ Sheets: ");
-    Serial.println(httpResponseCode);
   }
 
   http.end();
@@ -147,7 +161,8 @@ String getCurrentTime() {
 }
 
 void sendToGoogleSheets(String rfid, String name, String className) {
-  WiFiClient client;
+  WiFiClientSecure client;
+  client.setInsecure();
   HTTPClient http;
 
   StaticJsonDocument<256> doc;
@@ -164,9 +179,9 @@ void sendToGoogleSheets(String rfid, String name, String className) {
 
   if (httpResponseCode > 0) {
     String response = http.getString();
-    Serial.println("📡 Phản hồi server: " + response);
+    Serial.println("📡 Server phản hồi: " + response);
   } else {
-    Serial.print("❌ Lỗi gửi dữ liệu: ");
+    Serial.print("❌ Gửi lỗi: ");
     Serial.println(httpResponseCode);
   }
 
