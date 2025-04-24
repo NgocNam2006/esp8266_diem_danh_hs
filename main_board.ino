@@ -6,18 +6,23 @@
 #include <WiFiClientSecure.h>
 #include <LiquidCrystal_I2C.h>
 
-LiquidCrystal_I2C lcd(0x3F, 16, 2);
+// LCD I2C
+LiquidCrystal_I2C lcd(0x27, 16, 2);
 
+// Wi-Fi
 const char* ssid = "NAME_WIFI";
 const char* password = "PASS_WIFI";
 
+// Google Apps Script URL
 const char* serverName = "LINK_APP_SCRIPT";
 
-#define SS_PIN 15
-#define RST_PIN 5
+// RC522
+#define SS_PIN 15  // D8
+#define RST_PIN 5  // D1
 MFRC522 mfrc522(SS_PIN, RST_PIN);
 
-#define BUZZER_PIN 4
+// Buzzer
+#define BUZZER_PIN 14 // D5
 
 struct UserInfo {
   String name;
@@ -27,7 +32,6 @@ struct UserInfo {
 void setup() {
   Serial.begin(115200);
   pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, LOW);
 
   lcd.init();
   lcd.backlight();
@@ -57,7 +61,7 @@ void ensureWiFiConnected() {
     unsigned long startAttemptTime = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
       delay(500);
-      Serial.print("...");
+      Serial.print(".");
     }
     if (WiFi.status() == WL_CONNECTED) Serial.println("\n✅ Wi-Fi đã kết nối lại");
     else Serial.println("\n❌ Không thể kết nối Wi-Fi");
@@ -67,8 +71,9 @@ void ensureWiFiConnected() {
 void loop() {
   ensureWiFiConnected();
 
-  if (!mfrc522.PICC_IsNewCardPresent()) return;
-  if (!mfrc522.PICC_ReadCardSerial()) return;
+  if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
+    return;
+  }
 
   String rfid = "";
   for (byte i = 0; i < mfrc522.uid.size; i++) {
@@ -80,9 +85,11 @@ void loop() {
   String currentTime = getCurrentTime();
   sendToGoogleSheets(rfid, user.name, user.className);
 
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(user.name == "Unknown" ? 500 : 300);
-  digitalWrite(BUZZER_PIN, LOW);
+  if (user.name != "Unknown") {
+    tone(BUZZER_PIN, 1000);
+    delay(300);
+    noTone(BUZZER_PIN);
+  }
 
   Serial.println("===== ✅ Đã quét =====");
   Serial.print("⏰ Thời gian: "); Serial.println(currentTime);
@@ -93,12 +100,38 @@ void loop() {
 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(user.name.length() > 16 ? user.name.substring(0, 16) : user.name);
+  lcd.print(fitLCD(user.name));
   lcd.setCursor(0, 1);
   String line2 = user.className + " " + currentTime;
-  lcd.print(line2.length() > 16 ? line2.substring(0, 16) : line2);
+  lcd.print(fitLCD(line2));
 
-  delay(3000);
+  delay(1000); // delay lượt quét thẻ
+  mfrc522.PICC_HaltA();
+  mfrc522.PCD_StopCrypto1();
+
+  unsigned long startWait = millis();
+  Serial.println("⏳ Chờ rút thẻ...");
+  while ((mfrc522.PICC_IsNewCardPresent() || mfrc522.PICC_ReadCardSerial()) && millis() - startWait < 5000) {
+    delay(200);
+  }
+
+  forceResetRC522(); // Reset mạnh
+}
+
+void forceResetRC522() {
+  Serial.println("🔄 Force reset RC522...");
+
+  mfrc522.PICC_HaltA();
+  mfrc522.PCD_StopCrypto1();
+
+  for (int i = 0; i < 3; i++) {
+    mfrc522.PCD_Reset();
+    delay(100);
+  }
+
+  mfrc522.PCD_Init();
+  delay(100);
+  Serial.println("✅ RC522 đã reset hoàn toàn");
 }
 
 UserInfo getUserInfoFromRFID(String rfid) {
@@ -117,29 +150,25 @@ UserInfo getUserInfoFromRFID(String rfid) {
   if (httpResponseCode == 200) {
     String payload = http.getString();
     StaticJsonDocument<256> doc;
-    if (!deserializeJson(doc, payload)) {
+    if (deserializeJson(doc, payload) == DeserializationError::Ok) {
       info.name = doc["name"] | "Unknown";
       info.className = doc["class"] | "";
     }
   } 
-  else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND || httpResponseCode == HTTP_CODE_TEMPORARY_REDIRECT) {
+  //Nếu mạch esp của bạn ổn định thì hãy comment phần này để không tốn thời gian chuyển hướng
+  else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
     String redirectUrl = http.getLocation();
-    Serial.println("🔄 Đang chuyển hướng đến: " + redirectUrl);
     http.end();
     http.begin(client, redirectUrl);
-    
     httpResponseCode = http.GET();
     if (httpResponseCode == 200) {
       String payload = http.getString();
       StaticJsonDocument<256> doc;
-      if (!deserializeJson(doc, payload)) {
+      if (deserializeJson(doc, payload) == DeserializationError::Ok) {
         info.name = doc["name"] | "Unknown";
         info.className = doc["class"] | "";
       }
     }
-  } 
-  else {
-    Serial.println("❌ HTTP error: " + String(httpResponseCode));
   }
 
   http.end();
@@ -159,6 +188,15 @@ String getCurrentTime() {
   if (httpResponseCode == 200) {
     payload = http.getString();
     payload.trim();
+  } else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
+    String redirectUrl = http.getLocation();
+    http.end();
+    http.begin(client, redirectUrl);
+    httpResponseCode = http.GET();
+    if (httpResponseCode == 200) {
+      payload = http.getString();
+      payload.trim();
+    }
   }
 
   http.end();
@@ -191,4 +229,8 @@ void sendToGoogleSheets(String rfid, String name, String className) {
   }
 
   http.end();
+}
+
+String fitLCD(String text) {
+  return text.length() > 16 ? text.substring(0, 16) : text;
 }
