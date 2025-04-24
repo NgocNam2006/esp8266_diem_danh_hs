@@ -26,7 +26,7 @@ Dự án sử dụng **ESP8266 + RC522 + LCD1620A + Buzzer 3V**, kết nối Wi-
 | **Buzzer**   | Chân +      | D2 (GPIO4)      |
 |              | Chân –      | GND             |
 |**LCD 1620A** | GND         | GND             |
-|              | VCC         | 5V              |
+|              | VCC         | 5V (VIN hoặc VU)|
 |              | SDA         | D5 (GPIO14)     |
 |              | SCL         | D1 (GPIO5)      |
 
