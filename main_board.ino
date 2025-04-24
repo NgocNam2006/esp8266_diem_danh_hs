@@ -24,6 +24,11 @@ MFRC522 mfrc522(SS_PIN, RST_PIN);
 // Buzzer
 #define BUZZER_PIN 14 // D5
 
+// Chống quét liên tục
+String lastRFID = "";
+unsigned long lastScanTime = 0;
+const unsigned long debounceDelay = 5000; // 5 giây
+
 struct UserInfo {
   String name;
   String className;
@@ -71,15 +76,24 @@ void ensureWiFiConnected() {
 void loop() {
   ensureWiFiConnected();
 
-  if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) {
-    return;
-  }
+  if (!mfrc522.PICC_IsNewCardPresent() || !mfrc522.PICC_ReadCardSerial()) return;
 
   String rfid = "";
   for (byte i = 0; i < mfrc522.uid.size; i++) {
     rfid += String(mfrc522.uid.uidByte[i], HEX);
   }
   rfid.toUpperCase();
+
+  // 🚫 Chống quét liên tục
+  unsigned long currentTimeMs = millis();
+  if (rfid == lastRFID && currentTimeMs - lastScanTime < debounceDelay) {
+    Serial.println("⚠️ Bỏ qua: trùng UID và thời gian chưa đủ delay");
+    mfrc522.PICC_HaltA();
+    mfrc522.PCD_StopCrypto1();
+    return;
+  }
+  lastRFID = rfid;
+  lastScanTime = currentTimeMs;
 
   UserInfo user = getUserInfoFromRFID(rfid);
   String currentTime = getCurrentTime();
@@ -92,20 +106,19 @@ void loop() {
   }
 
   Serial.println("===== ✅ Đã quét =====");
-  Serial.print("⏰ Thời gian: "); Serial.println(currentTime);
-  Serial.print("🆔 UID: "); Serial.println(rfid);
-  Serial.print("👤 Họ tên: "); Serial.println(user.name);
-  Serial.print("🏫 Lớp: "); Serial.println(user.className);
+  Serial.println("⏰ Thời gian: " + currentTime);
+  Serial.println("🆔 UID: " + rfid);
+  Serial.println("👤 Họ tên: " + user.name);
+  Serial.println("🏫 Lớp: " + user.className);
   Serial.println("=====================");
 
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(fitLCD(user.name));
   lcd.setCursor(0, 1);
-  String line2 = user.className + " " + currentTime;
-  lcd.print(fitLCD(line2));
+  lcd.print(fitLCD(user.className + " " + currentTime));
 
-  delay(1000); // delay lượt quét thẻ
+  delay(1000);
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
 
@@ -120,15 +133,12 @@ void loop() {
 
 void forceResetRC522() {
   Serial.println("🔄 Force reset RC522...");
-
   mfrc522.PICC_HaltA();
   mfrc522.PCD_StopCrypto1();
-
   for (int i = 0; i < 3; i++) {
     mfrc522.PCD_Reset();
     delay(100);
   }
-
   mfrc522.PCD_Init();
   delay(100);
   Serial.println("✅ RC522 đã reset hoàn toàn");
@@ -188,7 +198,8 @@ String getCurrentTime() {
   if (httpResponseCode == 200) {
     payload = http.getString();
     payload.trim();
-  } else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
+  } 
+  else if (httpResponseCode == HTTP_CODE_MOVED_PERMANENTLY || httpResponseCode == HTTP_CODE_FOUND) {
     String redirectUrl = http.getLocation();
     http.end();
     http.begin(client, redirectUrl);
@@ -219,7 +230,8 @@ void sendToGoogleSheets(String rfid, String name, String className) {
   http.begin(client, serverName);
   http.addHeader("Content-Type", "application/json");
   int httpResponseCode = http.POST(jsonString);
-// phần này báo phản hồi và lỗi của server về serial monitor nếu không cân thì hãy xóa
+
+  // phần này báo phản hồi và lỗi của server về serial monitor nếu không cần thì hãy xóa
   if (httpResponseCode > 0) {
     String response = http.getString();
     Serial.println("📡 Server phản hồi: " + response);
