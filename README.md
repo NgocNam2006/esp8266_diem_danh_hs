@@ -93,3 +93,8 @@ Thay `NAME_WIFI`, `PASS_WIFI` và `LINK_APP_SCRIPT` trong code bằng thông tin
 - **Facebook**: [Hồ Ngọc Nam](https://facebook.com/namdz.pro.2006)
 - **Discord**: [HuYuNan (@ngocnamm_2006)](https://discord.gg/QMfA6kVY)
 --- 
+## 6. Lưu Ý
+- Một số phần vẫn chưa hoàn thiện
+- Nếu lần đầu quét bình thường nhưng đến lần 2 lại không nhận thì hãy thử rút buzzer ra (vì có thể buzzer làm nhiễu tín hiệu của **Module RC522**)
+
+---
