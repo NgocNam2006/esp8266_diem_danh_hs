@@ -219,7 +219,7 @@ void sendToGoogleSheets(String rfid, String name, String className) {
   http.begin(client, serverName);
   http.addHeader("Content-Type", "application/json");
   int httpResponseCode = http.POST(jsonString);
-
+// phần này báo phản hồi và lỗi của server về serial monitor nếu không cân thì hãy xóa
   if (httpResponseCode > 0) {
     String response = http.getString();
     Serial.println("📡 Server phản hồi: " + response);
